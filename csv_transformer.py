@@ -47,7 +47,7 @@ class Table(object):
       "int": "int"
     }
 
-    sql_template = "create table %s ( id int NOT NULL AUTO_INCREMENT, %s )"
+    sql_template = "create table %s ( %s )"
 
     values = []
     for field, idx, cast, typename in fields:
@@ -79,6 +79,23 @@ class Taobao(Table):
 
   def getrecords(self, filename, skipheader=True, n=None):
     self.readfile(filename, self.getfields(), skipheader, n)
+
+  def create_and_insert(self, conn):
+    batch = 100
+    cnt = 0
+    conn.execute(self.table_create_sql())
+    conn.commit()
+    print "total: %d" % len(self)
+    for record in self.records:
+      print "cnt: %d" % cnt
+      conn.execute(self.insertrecord_sql(record))
+      cnt += 1
+      if cnt % batch == 0:
+        conn.commit()
+
+    conn.commit()
+    conn.close()
+
 
   def insertrecord_sql(self, record):
     return super(Taobao, self).insertrecord_sql(self.tablename, self.getfields(), record)
@@ -123,12 +140,15 @@ class Taobao(Table):
 def main(filename):
   taobao = Taobao('taobao')
   print taobao.table_create_sql()
-  taobao.getrecords(filename, skipheader=True, n=20)
+  taobao.getrecords(filename, skipheader=True)
   print len(taobao)
   print taobao.records[0]
   record = taobao.records[0]
   record['birth'] = None
   print taobao.insertrecord_sql(record)
+  import sqlite3
+  conn = sqlite3.connect('test.db')
+  taobao.create_and_insert(conn)
 
 if __name__ == '__main__':
   print sys.argv
