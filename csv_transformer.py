@@ -31,9 +31,7 @@ class Table(object):
         v = rawdata[index]
         v = cast(v)
       except Exception as ex:
-        print ex
-        print line
-        print field, index
+        print ex, field, index
         v = None
 
       obj[field] = v
@@ -49,12 +47,7 @@ class Table(object):
       "int": "int"
     }
 
-    sql_template = """
-create table %s(
-  id int NOT NULL AUTO_INCREMENT,
-%s
-)
-    """
+    sql_template = "create table %s ( id int NOT NULL AUTO_INCREMENT, %s )"
 
     values = []
     for field, idx, cast, typename in fields:
@@ -63,11 +56,35 @@ create table %s(
       else:
         values.append("%s %s" % (field, mapper[cast.__name__]))
 
-    return sql_template % (tablename, ",\n".join(values))
+    return sql_template % (tablename, ", ".join(values))
+
+  def insertrecord_sql(self, tablename, fields, record):
+    """
+    Generate the sql according to the tablename and fields
+    """
+    kvs = [[field, record[field]] for field, idx, cast, typename in fields]
+
+    def postprocess(v):
+      if v == None: return 'NULL'
+      else: return "'%s'" % str(v)
+
+    return "insert into %s (%s) values (%s)" % \
+      (tablename, ','.join([kv[0] for kv in kvs]), ','.join([postprocess(kv[1]) for kv in kvs]))
+
 
 class Taobao(Table):
+  def __init__(self, tablename):
+    super(Taobao, self).__init__()
+    self.tablename = tablename
+
   def getrecords(self, filename, skipheader=True, n=None):
     self.readfile(filename, self.getfields(), skipheader, n)
+
+  def insertrecord_sql(self, record):
+    return super(Taobao, self).insertrecord_sql(self.tablename, self.getfields(), record)
+
+  def table_create_sql(self):
+    return super(Taobao, self).table_create_sql(self.tablename, self.getfields())
 
   def getfields(self):
     fields = [
@@ -104,11 +121,14 @@ class Taobao(Table):
     return newfields
 
 def main(filename):
-  taobao = Taobao()
-  print taobao.table_create_sql('taobao', taobao.getfields())
+  taobao = Taobao('taobao')
+  print taobao.table_create_sql()
   taobao.getrecords(filename, skipheader=True, n=20)
   print len(taobao)
   print taobao.records[0]
+  record = taobao.records[0]
+  record['birth'] = None
+  print taobao.insertrecord_sql(record)
 
 if __name__ == '__main__':
   print sys.argv
