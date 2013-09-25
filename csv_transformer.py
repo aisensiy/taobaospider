@@ -3,11 +3,44 @@ import types
 import sys
 
 class Table(object):
-  def __init__(self):
+  def __init__(self, tablename):
+    self.tablename = tablename
     self.records = []
 
   def __len__(self):
     return len(self.records)
+
+  def getrecords(self, filename, skipheader=True, n=None):
+    self.readfile(filename, self.getfields(), skipheader, n)
+
+  def create_and_insert(self, conn, batch=100):
+    cnt = 0
+    conn.execute(self.table_create_sql())
+    conn.commit()
+    print "total: %d" % len(self)
+    for record in self.records:
+      print "cnt: %d" % cnt
+      conn.execute(self.insertrecord_sql(record))
+      cnt += 1
+      if cnt % batch == 0:
+        conn.commit()
+
+    conn.commit()
+    conn.close()
+
+  def getfields(self, fields=[]):
+    """
+    The fields is []
+    """
+    newfields = []
+
+    for field in fields:
+      l = list(field)
+      if len(field) == 3: l.append(None)
+      newfields.append(l)
+
+    return newfields
+
 
   def readfile(self, data_file, fields, skipheader=True, n=None):
     fp = open(data_file)
@@ -41,67 +74,41 @@ class Table(object):
   def addrecord(self, record):
     self.records.append(record)
 
-  def table_create_sql(self, tablename, fields):
+  def table_create_sql(self):
     mapper = {
       "str": "text",
       "int": "int"
     }
 
-    sql_template = "create table %s ( %s )"
+    sql_template = "create table %s ( id int(11) NOT NULL AUTO_INCREMENT, %s )"
 
     values = []
-    for field, idx, cast, typename in fields:
+    for field, idx, cast, typename in self.getfields():
       if typename:
         values.append("%s %s" % (field, typename))
       else:
         values.append("%s %s" % (field, mapper[cast.__name__]))
 
-    return sql_template % (tablename, ", ".join(values))
+    return sql_template % (self.tablename, ", ".join(values))
 
-  def insertrecord_sql(self, tablename, fields, record):
+  def insertrecord_sql(self, record):
     """
     Generate the sql according to the tablename and fields
     """
-    kvs = [[field, record[field]] for field, idx, cast, typename in fields]
+    kvs = [[field, record[field]] for field, idx, cast, typename in self.getfields()]
 
     def postprocess(v):
       if v == None: return 'NULL'
       else: return "'%s'" % str(v)
 
     return "insert into %s (%s) values (%s)" % \
-      (tablename, ','.join([kv[0] for kv in kvs]), ','.join([postprocess(kv[1]) for kv in kvs]))
+      (self.tablename, ','.join([kv[0] for kv in kvs]), ','.join([postprocess(kv[1]) for kv in kvs]))
 
 
 class Taobao(Table):
   def __init__(self, tablename):
-    super(Taobao, self).__init__()
+    super(Taobao, self).__init__(tablename)
     self.tablename = tablename
-
-  def getrecords(self, filename, skipheader=True, n=None):
-    self.readfile(filename, self.getfields(), skipheader, n)
-
-  def create_and_insert(self, conn):
-    batch = 100
-    cnt = 0
-    conn.execute(self.table_create_sql())
-    conn.commit()
-    print "total: %d" % len(self)
-    for record in self.records:
-      print "cnt: %d" % cnt
-      conn.execute(self.insertrecord_sql(record))
-      cnt += 1
-      if cnt % batch == 0:
-        conn.commit()
-
-    conn.commit()
-    conn.close()
-
-
-  def insertrecord_sql(self, record):
-    return super(Taobao, self).insertrecord_sql(self.tablename, self.getfields(), record)
-
-  def table_create_sql(self):
-    return super(Taobao, self).table_create_sql(self.tablename, self.getfields())
 
   def getfields(self):
     fields = [
@@ -128,14 +135,7 @@ class Taobao(Table):
       ('birth', 29, str)
     ]
 
-    newfields = []
-
-    for field in fields:
-      l = list(field)
-      if len(field) == 3: l.append(None)
-      newfields.append(l)
-
-    return newfields
+    return super(Taobao, self).getfields(fields)
 
 def main(filename):
   taobao = Taobao('taobao')
@@ -146,9 +146,9 @@ def main(filename):
   record = taobao.records[0]
   record['birth'] = None
   print taobao.insertrecord_sql(record)
-  import sqlite3
-  conn = sqlite3.connect('test.db')
-  taobao.create_and_insert(conn)
+  # import sqlite3
+  # conn = sqlite3.connect('test.db')
+  # taobao.create_and_insert(conn)
 
 if __name__ == '__main__':
   print sys.argv
