@@ -1,4 +1,6 @@
 todo.md
 *.swp
 *.db
+*.csv
 *.pyc
+/config/database.yaml
