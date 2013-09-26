@@ -1,0 +1,6 @@
+development:
+  host: 'localhost'
+  user: 'root'
+  passwd: 'liangge8'
+  port: 3306
+  db: 'spider'

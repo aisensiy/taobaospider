@@ -1,29 +1,41 @@
-import sqlite3
+import MySQLdb
 
 class DB:
-  def __init__(self, dbname):
-    self.conn = sqlit3.connect(dbname)
+  """
+  A vitual class
+  """
+  def __init__(self, config):
+    pass
 
-  def create_tables(self):
-    """docstring for create_tables"""
-    create_url_sql = """
-    create table url(
-      id int(11) NOT NULL AUTO_INCREMENT,
-      url text NOT NULL,
-      content text
-    )
-    """
-    create_url_index_sql = """
-    create index urlidx on url(url)
-    """
-    create_rawdata_sql = """
-    create table rawdata(
-      id int(11) NOT NULL AUTO_INCREMENT,
-      uid int,
-      ip varchar(128),
-      agent text,
-      docsign
-    )
-    """
+class MySQL(DB):
+  def __init__(self, config):
+    self.conn = MySQLdb.connect(**config)
+
+  def execute(self, sql):
+    cursor = self.conn.cursor()
+    return cursor.execute(sql)
+
+  def fetchone(self, sql):
+    print "run: ", sql
+    cursor = self.conn.cursor()
+    cursor.execute(sql)
+    return cursor.fetchone()
+
+  def fetchall(self, sql):
+    print "run: ", sql
+    cursor = self.conn.cursor()
+    cursor.execute(sql)
+    return cursor.fetchall()
+
+  def close(self):
+    self.conn.close()
+
+  def commit(self):
+    return self.conn.commit()
 
 
+if __name__ == '__main__':
+  import yaml
+  config = yaml.load(open('config/database.yml'))
+  db = MySQL(config['development'])
+  print db.fetchrows('taobao', 'url', 0, 10)
