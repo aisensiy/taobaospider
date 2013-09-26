@@ -9,25 +9,36 @@ class DB:
 
 class MySQL(DB):
   def __init__(self, config):
-    self.conn = MySQLdb.connect(**config)
+    self.config = config
+    self.connect()
 
-  def execute(self, sql):
-    cursor = self.conn.cursor()
-    return cursor.execute(sql)
+  def connect(self):
+    self.conn = MySQLdb.connect(**self.config)
+
+  def execute(self, *args, **kvargs):
+    try:
+      cursor = self.conn.cursor()
+      cursor.execute(*args, **kvargs)
+    except (AttributeError, MySQLdb.OperationalError):
+      self.connect()
+      cursor = self.conn.cursor()
+      cursor.execute(*args, **kvargs)
+    return cursor
 
   def fetchone(self, sql):
-    print "run: ", sql
+    print "[SQL]: ", sql
     cursor = self.conn.cursor()
     cursor.execute(sql)
     return cursor.fetchone()
 
   def fetchall(self, sql):
-    print "run: ", sql
+    print "[SQL]: ", sql
     cursor = self.conn.cursor()
     cursor.execute(sql)
     return cursor.fetchall()
 
   def close(self):
+    self.conn.commit()
     self.conn.close()
 
   def commit(self):

@@ -1,34 +1,66 @@
+# encoding: utf-8
+
 import urllib2
+from gzip import GzipFile
+from StringIO import StringIO
+from threading import Thread
+import socket
+
 from Queue import Queue
 from threading import Thread
 from db import MySQL as DB
 
+# global
+queue = Queue()
+skip = 0
+
 class UrlHandler:
-  def __init__(self, conn, skip = 0):
-    self.queue = Queue()
+  def __init__(self, conn):
     self.conn = conn
-    self.skip = skip
 
     self._fetchrows()
 
   def indexed(self, url):
     u = self.conn.fetchone \
-      ("select * from url where `url` = '%s'" % url)
+        ("select * from url where `url` = '%s'" % url)
 
     if u != None: return True
     else: return False
 
   def empty(self):
-    return self.queue.empty()
+    return queue.empty()
 
   def get_url(self):
-    url = self.queue.get()
-    if self.queue.qsize() < 10:
+    url = queue.get()
+    if queue.qsize() < 50:
       self._fetchrows()
 
+    try:
+      url = url.decode('utf8')
+    except Exception, e:
+      try:
+        url = url.decode('gbk')
+      except Exception, e:
+        print '[ERROR] decode url failed'
+
+    return url
+
   def insert_url(self, url, content):
+    newcontent = None
+    try:
+      newcontent = content.decode('gbk')
+    except Exception, e:
+      print "[INFO] failed ", e
+      try:
+        newcontent = content.decode('utf8')
+      except Exception, e:
+        print "[INFO] failed ", e
+        print "[ERROR] %s cannot decode by gbk or utf8" % url
+
+    if not newcontent: return
+
     self.conn.execute \
-      ("insert into url(url, content) values('%s', '%s')", (url, content))
+        ("insert into url(url, content) values(%s, %s)", (url, newcontent))
     self.conn.commit()
 
   # private
@@ -36,13 +68,14 @@ class UrlHandler:
     """
     Fetch many rows with one column
     """
-    rows = self.conn.fetchall("select url from taobao limit %d offset %d" % (limit, self.skip))
+    global skip
+    rows = self.conn.fetchall("select url from taobao limit %d offset %d" % (limit, skip))
     rows = set(rows)
-    self.skip += limit
+    skip += limit
     for row in rows:
-      self.queue.put(row[0])
+      if row[0]: queue.put(row[0])
 
-    print 'Fetch urls from db, now queue size is: ', self.queue.qsize()
+    print '[FETCH] urls from db, now queue size is: ', queue.qsize()
 
 class Worker(Thread):
   def __init__(self, url_handler):
@@ -52,30 +85,44 @@ class Worker(Thread):
   def run(self):
     while not self.url_handler.empty():
       url = self.url_handler.get_url()
-      print 'Get url: ', url
+      print '[GET] url: ', url
 
       if url and not self.url_handler.indexed(url):
         self.fetch_url(url)
 
   def fetch_url(self, url):
-    print '==================== fetch url: ', url
-    lines = urllib2.urlopen(url).read()
-    # TODO: save it
-    self.url_handler.insert_url(url, lines)
-    print '==================== url chars: ', url, lines.split('\n')[0]
+    request = urllib2.Request(url)
+    request.add_header('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.76 Safari/537.36')
+    request.add_header('Accept-Encoding', 'gzip,deflate')
+
+    try:
+      print '[REQEST] url: ', url
+      response = urllib2.urlopen(request)
+      data = response.read()
+      if response.info().getheader('Content-Encoding') \
+        and response.info().getheader('Content-Encoding') == 'gzip':
+        data = GzipFile(fileobj=StringIO(data)).read()
+
+      # TODO: save it
+      self.url_handler.insert_url(url, data)
+      print '[INSERT] url: ', url
+    except urllib2.URLError as e:
+      print type(e)    #not catch
+    except socket.timeout as e:
+      print type(e)    #catched
 
 class TaskManager():
-  def __init__(self, url_handler, thread_num=10):
-    self.url_handler = url_handler
+  def __init__(self, dbconfig, thread_num=10):
+    self.dbconfig = dbconfig
     self.thread_num = thread_num
 
   def start(self):
     for num in range(self.thread_num):
-      Worker(self.url_handler).start()
+      Worker(UrlHandler(DB(self.dbconfig))).start()
 
 if __name__ == '__main__' or True:
   import yaml
   config = yaml.load(open('config/database.yml'))
-  url_handler = UrlHandler(DB(config['development']))
-  tm = TaskManager(url_handler, thread_num=1)
+
+  tm = TaskManager(config['development'], thread_num=5)
   tm.start()
