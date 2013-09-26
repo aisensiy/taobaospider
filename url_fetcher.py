@@ -10,9 +10,17 @@ from Queue import Queue
 from threading import Thread
 from db import MySQL as DB
 
+from pyquery import PyQuery as pq
+import re
+
 # global
 queue = Queue()
 skip = 0
+
+def title_sanitize(title):
+  title = title.strip()
+  title = re.sub(r'\s+', ' ', title)
+  return title
 
 class UrlHandler:
   def __init__(self, conn):
@@ -59,8 +67,17 @@ class UrlHandler:
 
     if not newcontent: return
 
+    try:
+      dom = pq(newcontent)
+      title = dom('title') and dom('title')[0].text or None
+      if title: title = title_sanitize(title)
+    except Exception, e:
+      print e
+      print "[ERROR] parse html error in", url
+      title = None
+
     self.conn.execute \
-        ("insert into url(url, content) values(%s, %s)", (url, newcontent))
+        ("insert into url(url, content, title) values(%s, %s, %s)", (url, newcontent, title))
     self.conn.commit()
 
   # private

@@ -14,7 +14,8 @@ def create_tables(conn):
   create table IF NOT EXISTS url(
     id int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
     url text NOT NULL,
-    content MEDIUMTEXT
+    content MEDIUMTEXT,
+    title text
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
   """
   create_url_index_sql = """
