@@ -3,4 +3,5 @@ todo.md
 *.db
 *.csv
 *.pyc
-/config/database.yaml
+/config/database.yml
+*.log
