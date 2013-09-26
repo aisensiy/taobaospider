@@ -12,6 +12,7 @@ class Table(object):
 
   def getrecords(self, filename, skipheader=True, n=None):
     self.readfile(filename, self.getfields(), skipheader, n)
+    print "Len of records: %d" % len(self)
 
   def create_and_insert(self, conn, batch=100):
     cnt = 0
@@ -26,7 +27,6 @@ class Table(object):
         conn.commit()
 
     conn.commit()
-    conn.close()
 
   def getfields(self, fields=[]):
     """
@@ -43,6 +43,7 @@ class Table(object):
 
 
   def readfile(self, data_file, fields, skipheader=True, n=None):
+    print "Read file: %s" % data_file
     fp = open(data_file)
 
     for i, line in enumerate(fp):
@@ -80,7 +81,7 @@ class Table(object):
       "int": "int"
     }
 
-    sql_template = "create table %s ( id int(11) NOT NULL AUTO_INCREMENT, %s )"
+    sql_template = "create table IF NOT EXISTS %s ( id int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY, %s ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci"
 
     values = []
     for field, idx, cast, typename in self.getfields():
