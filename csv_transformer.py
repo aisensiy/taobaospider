@@ -3,35 +3,29 @@ import types
 import sys
 
 class Table(object):
-  def __init__(self, tablename):
+  def __init__(self, tablename, conn):
     self.tablename = tablename
-    self.records = []
+    self.conn = conn
+    self.counter = 0
 
   def __len__(self):
     return len(self.records)
 
-  def getrecords(self, filename, skipheader=True, n=None):
-    self.readfile(filename, self.getfields(), skipheader, n)
-    print "Len of records: %d" % len(self)
+  def insert_record(self, record):
+    kvs = [[field, record[field]] for field, idx, cast, typename in self.getfields()]
+    fields = ', '.join([kv[0] for kv in kvs])
+    self.conn.execute \
+      ("insert into %s (%s) values(%s)" % (self.tablename, fields, ', '.join(['%s'] * len(kvs))), [kv[1] for kv in kvs])
 
-  def create_and_insert(self, conn, batch=100):
-    cnt = 0
-    conn.execute(self.table_create_sql())
-    conn.commit()
-    print "total: %d" % len(self)
-    for record in self.records:
-      print "cnt: %d" % cnt
-      conn.execute(self.insertrecord_sql(record))
-      cnt += 1
-      if cnt % batch == 0:
-        conn.commit()
+  def create_and_insert(self, filename, *args, **kvargs):
+    self.create_table()
+    self.insert_records_from_csv(filename, *args, **kvargs)
 
-    conn.commit()
+  def create_table(self):
+    self.conn.execute(self.table_create_sql())
 
   def getfields(self, fields=[]):
-    """
-    The fields is []
-    """
+    """ The fields is [] """
     newfields = []
 
     for field in fields:
@@ -41,20 +35,24 @@ class Table(object):
 
     return newfields
 
-
-  def readfile(self, data_file, fields, skipheader=True, n=None):
-    print "Read file: %s" % data_file
-    fp = open(data_file)
+  def insert_records_from_csv(self, filename, skipheader=False, n=None, batch=300):
+    print "[INFO]\tRead file:", filename
+    fp = open(filename)
+    counter = 0
 
     for i, line in enumerate(fp):
-      if i == 0 and skipheader == True:
-        continue
-      if i == n:
-        break
-      record = self.makerecord(line, fields)
-      self.addrecord(record)
+      if i == 0 and skipheader == True: continue
+      if i == n: break
+      record = self.makerecord(line, self.getfields())
+      self.insert_record(record)
+      counter += 1
+      if counter % batch == 0:
+        self.conn.commit()
+        print "[INFO]\tcurrent counter: %d" % counter
 
+    self.conn.commit()
     fp.close()
+    print "[INFO]\tTotal:", counter
 
   def makerecord(self, line, fields):
     obj = {}
@@ -64,16 +62,14 @@ class Table(object):
       try:
         v = rawdata[index]
         v = cast(v)
+        if cast == str and len(v) == 0: v = None
       except Exception as ex:
-        print ex, field, index
+        print "[ERROR]\t", ex, field, index
         v = None
 
       obj[field] = v
 
     return obj
-
-  def addrecord(self, record):
-    self.records.append(record)
 
   def table_create_sql(self):
     mapper = {
@@ -93,9 +89,7 @@ class Table(object):
     return sql_template % (self.tablename, ", ".join(values))
 
   def insertrecord_sql(self, record):
-    """
-    Generate the sql according to the tablename and fields
-    """
+    """ Generate the sql according to the tablename and fields """
     kvs = [[field, record[field]] for field, idx, cast, typename in self.getfields()]
 
     def postprocess(v):
@@ -105,11 +99,30 @@ class Table(object):
     return "insert into %s (%s) values (%s)" % \
       (self.tablename, ','.join([kv[0] for kv in kvs]), ','.join([postprocess(kv[1]) for kv in kvs]))
 
+class TaobaoWithOutUser(Table):
+  def __init__(self, tablename, conn):
+    super(TaobaoWithOutUser, self).__init__(tablename, conn)
+
+  def getfields(self):
+    fields = [
+      ('uid', 0, str),
+      ('ip', 1, str),
+      ('agent', 2, str),
+      ('url', 5, str),
+      ('site', 6, str),
+      ('domain', 7, str),
+      ('referurl', 8, str),
+      ('date', 11, str, 'datetime'),
+      ('staytime', 12, int),
+      ('url_kw', 15, str),
+      ('refer_kw', 16, str)
+    ]
+
+    return super(TaobaoWithOutUser, self).getfields(fields)
 
 class Taobao(Table):
   def __init__(self, tablename):
     super(Taobao, self).__init__(tablename)
-    self.tablename = tablename
 
   def getfields(self):
     fields = [
@@ -139,19 +152,25 @@ class Taobao(Table):
     return super(Taobao, self).getfields(fields)
 
 def main(filename):
-  taobao = Taobao('taobao')
-  print taobao.table_create_sql()
-  taobao.getrecords(filename, skipheader=True)
-  print len(taobao)
-  print taobao.records[0]
-  record = taobao.records[0]
-  record['birth'] = None
-  print taobao.insertrecord_sql(record)
-  # import sqlite3
-  # conn = sqlite3.connect('test.db')
-  # taobao.create_and_insert(conn)
+  from db import MySQL as DB
+  import yaml
+  config = yaml.load(open('config/database.yml'))
+  conn = DB(config['development'])
+
+  # taobao = Taobao('taobao')
+  # print taobao.table_create_sql()
+  # taobao.getrecords(filename, skipheader=True)
+  # print len(taobao)
+  # print taobao.records[0]
+  # record = taobao.records[0]
+  # record['birth'] = None
+  # print taobao.insertrecord_sql(record)
+  taobao = TaobaoWithOutUser('taobao05', conn)
+  taobao.create_and_insert(filename)
 
 if __name__ == '__main__':
-  print sys.argv
+  import time
+  print "[INFO] Start at:", time.ctime()
   main(*sys.argv[1:])
+  print "[INFO] Finis at:", time.ctime()
 
