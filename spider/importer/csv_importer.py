@@ -131,9 +131,10 @@ class Taobao(Table):
     return super(Taobao, self).getfields(fields)
 
 def main(filename):
+  import settings
   from db import MySQL as DB
   import yaml
-  config = yaml.load(open('config/database.yml'))
+  config = yaml.load(open('../config/database.yml'))
   conn = DB(config['development'])
 
   # taobao = Taobao('taobao')

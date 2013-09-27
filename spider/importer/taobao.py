@@ -1,4 +1,4 @@
-from csv_transformer import Table
+from csv_importer import Table
 
 class TaobaoWithOutUser(Table):
   def __init__(self, tablename, conn):
