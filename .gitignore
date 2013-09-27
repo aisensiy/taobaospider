@@ -3,5 +3,5 @@ todo.md
 *.db
 *.csv
 *.pyc
-/config/database.yml
+/spider/config/database.yml
 *.log
