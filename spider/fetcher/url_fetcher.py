@@ -8,13 +8,13 @@ import socket
 
 from Queue import Queue
 from threading import Thread
-from db import MySQL as DB
+from util.db import MySQL as DB
 
 from pyquery import PyQuery as pq
 import re
 
 import heuristic
-from util import *
+from util.tools import *
 
 # global
 queue = Queue()
@@ -138,8 +138,8 @@ class TaskManager():
       Worker(UrlHandler(DB(self.dbconfig))).start()
 
 if __name__ == '__main__' or True:
-  import yaml
-  config = yaml.load(open('config/database.yml'))
+  from config.settings import *
+  print DB_CONFIG
 
-  tm = TaskManager(config['development'], thread_num=5)
-  tm.start()
+  # tm = TaskManager(config['development'], thread_num=5)
+  # tm.start()
