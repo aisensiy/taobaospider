@@ -1,4 +1,4 @@
-# encoding: utf-8
+# -*- coding: utf-8 -*-
 
 import urllib2
 from gzip import GzipFile
@@ -13,14 +13,12 @@ from db import MySQL as DB
 from pyquery import PyQuery as pq
 import re
 
+import heuristic
+from util import *
+
 # global
 queue = Queue()
 skip = 0
-
-def title_sanitize(title):
-  title = title.strip()
-  title = re.sub(r'\s+', ' ', title)
-  return title
 
 class UrlHandler:
   def __init__(self, conn):
@@ -115,13 +113,15 @@ class Worker(Thread):
     try:
       print '[REQEST] url: ', url
       response = urllib2.urlopen(request)
-      data = response.read()
+      content = response.read()
       if response.info().getheader('Content-Encoding') \
         and response.info().getheader('Content-Encoding') == 'gzip':
-        data = GzipFile(fileobj=StringIO(data)).read()
+        content = GzipFile(fileobj=StringIO(content)).read()
+
+      url, content = heuristic.url_content_heuristic(url, content)
 
       # TODO: save it
-      self.url_handler.insert_url(url, data)
+      self.url_handler.insert_url(url, content)
       print '[INSERT] url: ', url
     except urllib2.URLError as e:
       print type(e)    #not catch
