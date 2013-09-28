@@ -145,7 +145,6 @@ class TaskManager():
 
 if __name__ == '__main__' or True:
   from config.settings import *
-  print DB_CONFIG
-
-  # tm = TaskManager(config['development'], thread_num=5)
-  # tm.start()
+  # print DB_CONFIG
+  tm = TaskManager(DB_CONFIG, thread_num=5)
+  tm.start()
