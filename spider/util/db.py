@@ -14,6 +14,7 @@ class MySQL(DB):
 
   def connect(self):
     self.conn = MySQLdb.connect(**self.config)
+    self.conn.ping(True)
 
   def execute(self, *args, **kvargs):
     try:
@@ -25,16 +26,16 @@ class MySQL(DB):
       cursor.execute(*args, **kvargs)
     return cursor
 
-  def fetchone(self, sql):
+  def fetchone(self, sql, *args, **kvargs):
     print "[SQL]: ", sql
     cursor = self.conn.cursor()
-    cursor.execute(sql)
+    cursor.execute(sql, *args, **kvargs)
     return cursor.fetchone()
 
-  def fetchall(self, sql):
+  def fetchall(self, sql, *args, **kvargs):
     print "[SQL]: ", sql
     cursor = self.conn.cursor()
-    cursor.execute(sql)
+    cursor.execute(sql, *args, **kvargs)
     return cursor.fetchall()
 
   def close(self):

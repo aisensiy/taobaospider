@@ -33,7 +33,7 @@ class UrlHandler:
 
   def indexed(self, url):
     u = self.conn.fetchone \
-        ("select * from url where `url` = '%s'" % url)
+        ("select * from url where `url` = %s", url)
 
     if u != None: return True
     else: return False
