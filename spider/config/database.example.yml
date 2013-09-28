@@ -4,3 +4,11 @@ development:
   passwd: '000000'
   port: 3306
   db: 'spider'
+remote:
+  host: '163.115.11.95'
+  user: 'spider'
+  passwd: 'spider'
+  port: 3306
+  charset: 'utf8'
+  db: 'spider'
+env: 'development'
