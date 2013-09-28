@@ -124,7 +124,7 @@ class Worker(Thread):
         and response.info().getheader('Content-Encoding') == 'gzip':
         content = GzipFile(fileobj=StringIO(content)).read()
 
-      url, content = heuristic.url_content_heuristic(url, content)
+      url, content = heuristic.url_content_heuristic(url, content, response)
 
       # TODO: save it
       self.url_handler.insert_url(url, content)
