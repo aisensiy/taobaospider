@@ -102,9 +102,9 @@ class UrlFetcher():
 
       content = self._decode_content(content, url)
     except urllib2.URLError as e:
-      print "[ERROR]", type(e)    #catched
+      print "[ERROR]", e
     except socket.timeout as e:
-      print "[ERROR]", type(e)    #catched
+      print "[ERROR]", e
     except Exception as e:
       print "[ERROR]", e
 
@@ -140,7 +140,7 @@ class Worker(Thread):
 
       if url != None and not self.url_handler.indexed(url):
         content = self.url_fetcher.fetch(url)
-        if not content: return
+        if not content: continue
         # TODO: save it
         self.url_handler.insert_url(url, content)
         print '[INSERT] url: ', url
@@ -160,3 +160,4 @@ if __name__ == '__main__' or True:
   # print DB_CONFIG
   tm = TaskManager(DB_CONFIG, thread_num=5)
   tm.start()
+  print 'skip:', skip
