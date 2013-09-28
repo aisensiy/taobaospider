@@ -139,7 +139,7 @@ class Worker(Thread):
       print '[GET] url: ', url
 
       if url != None and not self.url_handler.indexed(url):
-        content = url_fetcher.fetch(url)
+        content = self.url_fetcher.fetch(url)
         if not content: return
         # TODO: save it
         self.url_handler.insert_url(url, content)
