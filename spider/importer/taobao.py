@@ -1,4 +1,5 @@
 from csv_importer import Table
+import sys
 
 class TaobaoWithOutUser(Table):
   def __init__(self, tablename, conn):
@@ -22,5 +23,18 @@ class TaobaoWithOutUser(Table):
     return super(TaobaoWithOutUser, self).getfields(fields)
 
 
+def import_taobao(filename):
+  from config.settings import *
+  from util.db import MySQL as DB
+  conn = DB(DB_CONFIG)
+  taobao = TaobaoWithOutUser('taobao', conn)
+  taobao.create_and_insert(filename)
+  conn.close()
+
 if __name__ == '__main__':
-  print open('../config/database.yml')
+  import time
+  print "[INFO] Start at:", time.ctime()
+  for filename in sys.argv[1:]:
+    import_taobao(filename)
+  print "[INFO] Finis at:", time.ctime()
+

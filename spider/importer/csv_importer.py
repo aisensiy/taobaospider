@@ -1,6 +1,10 @@
 import csv
 import types
 import sys
+import os
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(PROJECT_ROOT)
 
 class Table(object):
   def __init__(self, tablename, conn):
@@ -129,28 +133,4 @@ class Taobao(Table):
     ]
 
     return super(Taobao, self).getfields(fields)
-
-def main(filename):
-  import settings
-  from db import MySQL as DB
-  import yaml
-  config = yaml.load(open('../config/database.yml'))
-  conn = DB(config['development'])
-
-  # taobao = Taobao('taobao')
-  # print taobao.table_create_sql()
-  # taobao.getrecords(filename, skipheader=True)
-  # print len(taobao)
-  # print taobao.records[0]
-  # record = taobao.records[0]
-  # record['birth'] = None
-  # print taobao.insertrecord_sql(record)
-  taobao = TaobaoWithOutUser('taobao05', conn)
-  taobao.create_and_insert(filename)
-
-if __name__ == '__main__':
-  import time
-  print "[INFO] Start at:", time.ctime()
-  main(*sys.argv[1:])
-  print "[INFO] Finis at:", time.ctime()
 
