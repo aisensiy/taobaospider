@@ -1,1 +1,1 @@
-python url_fetcher.py > fetch.log 2>&1
+python spider/fetcher/url_fetcher.py > fetch.log 2>&1
