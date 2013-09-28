@@ -17,7 +17,6 @@ from threading import Thread
 from util.db import MySQL as DB
 
 from pyquery import PyQuery as pq
-import re
 
 import heuristic
 from util.tools import *
@@ -54,6 +53,7 @@ class UrlHandler:
         url = url.decode('gbk')
       except Exception, e:
         print '[ERROR] decode url failed'
+        url = None
 
     return url
 
