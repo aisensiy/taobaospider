@@ -85,20 +85,8 @@ class UrlHandler:
 
     print '[FETCH] urls from db, now queue size is: ', queue.qsize()
 
-class Worker(Thread):
-  def __init__(self, url_handler):
-    super(Worker, self).__init__()
-    self.url_handler = url_handler
-
-  def run(self):
-    while not self.url_handler.empty():
-      url = self.url_handler.get_url()
-      print '[GET] url: ', url
-
-      if url and not self.url_handler.indexed(url):
-        self.fetch_url(url)
-
-  def fetch_url(self, url):
+class UrlFetcher():
+  def fetch(self, url):
     request = urllib2.Request(url)
     request.add_header('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.76 Safari/537.36')
     request.add_header('Accept-Encoding', 'gzip,deflate')
@@ -112,21 +100,18 @@ class Worker(Thread):
         and response.info().getheader('Content-Encoding') == 'gzip':
         content = GzipFile(fileobj=StringIO(content)).read()
 
-      content = self._decode_content(content)
+      content = self._decode_content(content, url)
     except urllib2.URLError as e:
       print "[ERROR]", type(e)    #catched
     except socket.timeout as e:
       print "[ERROR]", type(e)    #catched
     except Exception as e:
-      print "[ERROR] Fetch url", e
+      print "[ERROR]", e
 
-    if not content: return
-    url, content = heuristic.url_content_heuristic(url, content, response)
-    # TODO: save it
-    self.url_handler.insert_url(url, content)
-    print '[INSERT] url: ', url
+    if content: content = heuristic.url_content_heuristic(url, content, response)
+    return content
 
-  def _decode_content(self, content):
+  def _decode_content(self, content, url):
     # decode from gbk or utf8
     newcontent = None
     try:
@@ -141,6 +126,26 @@ class Worker(Thread):
 
     return newcontent
 
+
+class Worker(Thread):
+  def __init__(self, url_handler, url_fetcher):
+    super(Worker, self).__init__()
+    self.url_handler = url_handler
+    self.url_fetcher = url_fetcher
+
+  def run(self):
+    while not self.url_handler.empty():
+      url = self.url_handler.get_url()
+      print '[GET] url: ', url
+
+      if url != None and not self.url_handler.indexed(url):
+        content = url_fetcher.fetch(url)
+        if not content: return
+        # TODO: save it
+        self.url_handler.insert_url(url, content)
+        print '[INSERT] url: ', url
+
+
 class TaskManager():
   def __init__(self, dbconfig, thread_num=10):
     self.dbconfig = dbconfig
@@ -148,7 +153,7 @@ class TaskManager():
 
   def start(self):
     for num in range(self.thread_num):
-      Worker(UrlHandler(DB(self.dbconfig))).start()
+      Worker(UrlHandler(DB(self.dbconfig)), UrlFetcher()).start()
 
 if __name__ == '__main__' or True:
   from config.settings import *

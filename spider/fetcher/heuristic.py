@@ -8,5 +8,5 @@ def url_content_heuristic(url, content, response):
   elif response.geturl() != url:
     content = "302"
 
-  return url, content
+  return content
 
