@@ -58,21 +58,8 @@ class UrlHandler:
     return url
 
   def insert_url(self, url, content):
-    newcontent = None
     try:
-      newcontent = content.decode('gbk')
-    except Exception, e:
-      print "[INFO] failed ", e
-      try:
-        newcontent = content.decode('utf8')
-      except Exception, e:
-        print "[INFO] failed ", e
-        print "[ERROR] %s cannot decode by gbk or utf8" % url
-
-    if not newcontent: return
-
-    try:
-      dom = pq(newcontent)
+      dom = pq(content)
       title = dom('title') and dom('title')[0].text or None
       if title: title = title_sanitize(title)
     except Exception, e:
@@ -81,7 +68,7 @@ class UrlHandler:
       title = None
 
     self.conn.execute \
-        ("insert into url(url, content, title) values(%s, %s, %s)", (url, newcontent, title))
+        ("insert into url(url, content, title) values(%s, %s, %s)", (url, content, title))
     self.conn.commit()
 
   # private
@@ -124,15 +111,32 @@ class Worker(Thread):
         and response.info().getheader('Content-Encoding') == 'gzip':
         content = GzipFile(fileobj=StringIO(content)).read()
 
-      url, content = heuristic.url_content_heuristic(url, content, response)
-
-      # TODO: save it
-      self.url_handler.insert_url(url, content)
-      print '[INSERT] url: ', url
+      content = self._decode_content(content)
     except urllib2.URLError as e:
       print type(e)    #not catch
     except socket.timeout as e:
       print type(e)    #catched
+
+    if not content: return
+    url, content = heuristic.url_content_heuristic(url, content, response)
+    # TODO: save it
+    self.url_handler.insert_url(url, content)
+    print '[INSERT] url: ', url
+
+  def _decode_content(self, content):
+    # decode from gbk or utf8
+    newcontent = None
+    try:
+      newcontent = content.decode('gbk')
+    except Exception, e:
+      print "[INFO] failed ", e
+      try:
+        newcontent = content.decode('utf8')
+      except Exception, e:
+        print "[INFO] failed ", e
+        print "[ERROR] %s cannot decode by gbk or utf8" % url
+
+    return newcontent
 
 class TaskManager():
   def __init__(self, dbconfig, thread_num=10):

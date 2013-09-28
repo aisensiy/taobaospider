@@ -28,7 +28,7 @@ def import_taobao(filename):
   from util.db import MySQL as DB
   conn = DB(DB_CONFIG)
   taobao = TaobaoWithOutUser('taobao', conn)
-  taobao.create_and_insert(filename)
+  taobao.create_and_insert(filename, batch=600)
   conn.close()
 
 if __name__ == '__main__':
