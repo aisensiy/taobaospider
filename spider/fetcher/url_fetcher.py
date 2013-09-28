@@ -103,6 +103,7 @@ class Worker(Thread):
     request.add_header('User-Agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.76 Safari/537.36')
     request.add_header('Accept-Encoding', 'gzip,deflate')
 
+    content = None
     try:
       print '[REQEST] url: ', url
       response = urllib2.urlopen(request)
@@ -113,9 +114,11 @@ class Worker(Thread):
 
       content = self._decode_content(content)
     except urllib2.URLError as e:
-      print type(e)    #not catch
+      print "[ERROR]", type(e)    #catched
     except socket.timeout as e:
-      print type(e)    #catched
+      print "[ERROR]", type(e)    #catched
+    except Exception as e:
+      print "[ERROR] Fetch url", e
 
     if not content: return
     url, content = heuristic.url_content_heuristic(url, content, response)
