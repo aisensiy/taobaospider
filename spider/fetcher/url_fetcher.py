@@ -21,6 +21,9 @@ from pyquery import PyQuery as pq
 import heuristic
 from util.tools import *
 
+import logging
+logging.basicConfig(level=logging.INFO)
+
 # global
 queue = Queue()
 skip = 0
@@ -52,7 +55,7 @@ class UrlHandler:
       try:
         url = url.decode('gbk')
       except Exception, e:
-        print '[ERROR] decode url failed'
+        logging.warn('decode url failed')
         url = None
 
     return url
@@ -63,8 +66,8 @@ class UrlHandler:
       title = dom('title') and dom('title')[0].text or None
       if title: title = title_sanitize(title)
     except Exception, e:
-      print e
-      print "[ERROR] parse html error in", url
+      logging.warn(e)
+      logging.warn("Parse html error in %s", url)
       title = None
 
     self.conn.execute \
@@ -84,7 +87,7 @@ class UrlHandler:
     for row in rows:
       if row[0]: queue.put(row[0])
 
-    print '[FETCH] urls from db, now queue size is: ', queue.qsize()
+    logging.info('[FETCH] urls from db, now queue size is: %d', queue.qsize())
 
 class UrlFetcher():
   def fetch(self, url):
@@ -94,7 +97,7 @@ class UrlFetcher():
 
     content = None
     try:
-      print '[REQEST] url: ', url
+      logging.info('[REQEST] url: %s', url)
       response = urllib2.urlopen(request)
       content = response.read()
       if response.info().getheader('Content-Encoding') \
@@ -103,11 +106,11 @@ class UrlFetcher():
 
       content = self._decode_content(content, url)
     except urllib2.URLError as e:
-      print "[ERROR]", e
+      logging.warn("[ERROR] %s", e)
     except socket.timeout as e:
-      print "[ERROR]", e
+      logging.warn("[ERROR] %s", e)
     except Exception as e:
-      print "[ERROR]", e
+      logging.warn("[ERROR] %s", e)
 
     if content: content = heuristic.url_content_heuristic(url, content, response)
     return content
@@ -118,12 +121,12 @@ class UrlFetcher():
     try:
       newcontent = content.decode('gbk')
     except Exception, e:
-      print "[INFO] failed ", e
+      logging.warn("[INFO] failed %s", e)
       try:
         newcontent = content.decode('utf8')
       except Exception, e:
-        print "[INFO] failed ", e
-        print "[ERROR] %s cannot decode by gbk or utf8" % url
+        logging.warn("[INFO] failed %s", e)
+        logging.warn("[ERROR] %s cannot decode by gbk or utf8 %s", url)
 
     return newcontent
 
@@ -137,14 +140,14 @@ class Worker(Thread):
   def run(self):
     while True:
       url = self.url_handler.get_url()
-      print '[GET] url: ', url
+      logging.info('[GET] url: %s', url)
 
       if url != None and not self.url_handler.indexed(url):
         content = self.url_fetcher.fetch(url)
         if not content: continue
         # TODO: save it
         self.url_handler.insert_url(url, content)
-        print '[INSERT] url: ', url
+        logging.info('[INSERT] url: %s', url)
       queue.task_done()
 
 

@@ -1,5 +1,8 @@
 import MySQLdb
 
+import logging
+logging.basicConfig(level=logging.INFO)
+
 class DB:
   """
   A vitual class
@@ -30,13 +33,13 @@ class MySQL(DB):
     return cursor
 
   def fetchone(self, sql, *args, **kvargs):
-    print "[SQL]: ", sql, args
+    logging.info("[SQL]: %s %s %s", sql, args, kvargs)
     cursor = self.conn.cursor()
     cursor.execute(sql, *args, **kvargs)
     return cursor.fetchone()
 
   def fetchall(self, sql, *args, **kvargs):
-    print "[SQL]: ", sql
+    logging.info("[SQL]: %s %s %s", sql, args, kvargs)
     cursor = self.conn.cursor()
     cursor.execute(sql, *args, **kvargs)
     return cursor.fetchall()
