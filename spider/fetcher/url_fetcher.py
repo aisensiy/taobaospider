@@ -21,14 +21,17 @@ from pyquery import PyQuery as pq
 import heuristic
 from util.tools import *
 
+from time import ctime
+
 import logging
 
 logging.basicConfig(level=logging.INFO)
-urllib2.socket.setdefaulttimeout(10)
+urllib2.socket.setdefaulttimeout(20)
 
 # global
 queue = Queue()
 skip = 0
+counter = 0
 lock = Lock()
 
 class UrlHandler:
@@ -48,6 +51,12 @@ class UrlHandler:
 
   def get_url(self):
     url = queue.get()
+
+    global counter
+    with lock:
+      counter += 1
+
+    logging.info('url count %d', counter)
 
     with lock:
       if queue.qsize() < 50: self._fetchrows()
@@ -90,7 +99,7 @@ class UrlHandler:
     for row in rows:
       if row[0]: queue.put(row[0])
 
-    logging.info('[FETCH] urls from db, now queue size is: %d', queue.qsize())
+    logging.info('[FETCH] now qsize: %d', queue.qsize())
 
 class UrlFetcher():
   def fetch(self, url):
@@ -100,7 +109,7 @@ class UrlFetcher():
 
     content = None
     try:
-      logging.info('[REQEST] url: %s', url)
+      logging.info('[REQ] url: %s', url)
       response = urllib2.urlopen(request)
       content = response.read()
       if response.info().getheader('Content-Encoding') \
@@ -108,12 +117,8 @@ class UrlFetcher():
         content = GzipFile(fileobj=StringIO(content)).read()
 
       content = self._decode_content(content, url)
-    except urllib2.URLError as e:
-      logging.warn("[ERROR] %s", e)
-    except socket.timeout as e:
-      logging.warn("[ERROR] %s", e)
     except Exception as e:
-      logging.warn("[ERROR] %s", e)
+      logging.warn("%s", e)
 
     if content: content = heuristic.url_content_heuristic(url, content, response)
     return content
@@ -129,7 +134,7 @@ class UrlFetcher():
         newcontent = content.decode('utf8')
       except Exception, e:
         logging.warn("[INFO] failed %s", e)
-        logging.warn("[ERROR] %s cannot decode by gbk or utf8", url)
+        logging.warn("[ERROR] %s cant decode by gbk or utf8", url)
 
     return newcontent
 
@@ -143,14 +148,14 @@ class Worker(Thread):
   def run(self):
     while True:
       url = self.url_handler.get_url()
-      logging.info('[GET] url: %s', url)
+      # logging.info('[GET] url: %s', url)
 
       if url != None and not self.url_handler.indexed(url):
         content = self.url_fetcher.fetch(url)
         if not content: continue
         # TODO: save it
         self.url_handler.insert_url(url, content)
-        logging.info('[INSERT] url: %s', url)
+        logging.info('[INSERT] %s', url)
       queue.task_done()
 
 
@@ -166,9 +171,9 @@ class TaskManager():
       worker.start()
 
 if __name__ == '__main__' or True:
+  logging.info('start at %s', ctime())
   from config.settings import *
-  # print DB_CONFIG
   tm = TaskManager(DB_CONFIG)
   tm.start()
   queue.join()
-  print 'skip:', skip
+  logging.info('finish at %s', ctime())

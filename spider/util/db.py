@@ -32,12 +32,12 @@ class MySQL(DB):
     return cursor
 
   def fetchone(self, sql, *args, **kvargs):
-    logging.info("[SQL]: %s %s %s", sql, args, kvargs)
+    logging.info("[SQL]: fetchone %s %s", args, kvargs)
     cursor = self.execute(sql, *args, **kvargs)
     return cursor.fetchone()
 
   def fetchall(self, sql, *args, **kvargs):
-    logging.info("[SQL]: %s %s %s", sql, args, kvargs)
+    logging.info("[SQL]: fetchall %s %s", args, kvargs)
     cursor = self.execute(sql, *args, **kvargs)
     return cursor.fetchall()
 
