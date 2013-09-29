@@ -17,7 +17,6 @@ class MySQL(DB):
 
   def connect(self):
     self.conn = MySQLdb.connect(**self.config)
-    self.conn.ping(True)
 
   def ping(self, *args, **kvargs):
     self.conn.ping(*args, **kvargs)
@@ -34,14 +33,12 @@ class MySQL(DB):
 
   def fetchone(self, sql, *args, **kvargs):
     logging.info("[SQL]: %s %s %s", sql, args, kvargs)
-    cursor = self.conn.cursor()
-    cursor.execute(sql, *args, **kvargs)
+    cursor = self.execute(sql, *args, **kvargs)
     return cursor.fetchone()
 
   def fetchall(self, sql, *args, **kvargs):
     logging.info("[SQL]: %s %s %s", sql, args, kvargs)
-    cursor = self.conn.cursor()
-    cursor.execute(sql, *args, **kvargs)
+    cursor = self.execute(sql, *args, **kvargs)
     return cursor.fetchall()
 
   def close(self):

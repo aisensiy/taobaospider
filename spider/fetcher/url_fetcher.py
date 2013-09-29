@@ -27,6 +27,7 @@ logging.basicConfig(level=logging.INFO)
 # global
 queue = Queue()
 skip = 0
+lock = Lock()
 
 class UrlHandler:
   def __init__(self, conn):
@@ -34,9 +35,8 @@ class UrlHandler:
     self._fetchrows()
 
   def indexed(self, url):
-    self.conn.ping(True)
     u = self.conn.fetchone \
-        ("select * from url where `url` = %s", url)
+          ("select * from url where `url` = %s", url)
 
     if u != None: return True
     else: return False
@@ -46,8 +46,9 @@ class UrlHandler:
 
   def get_url(self):
     url = queue.get()
-    if queue.qsize() < 50:
-      self._fetchrows()
+
+    with lock:
+      if queue.qsize() < 50: self._fetchrows()
 
     try:
       url = url.decode('utf8')
