@@ -22,7 +22,9 @@ import heuristic
 from util.tools import *
 
 import logging
+
 logging.basicConfig(level=logging.INFO)
+urllib2.socket.setdefaulttimeout(10)
 
 # global
 queue = Queue()
@@ -127,7 +129,7 @@ class UrlFetcher():
         newcontent = content.decode('utf8')
       except Exception, e:
         logging.warn("[INFO] failed %s", e)
-        logging.warn("[ERROR] %s cannot decode by gbk or utf8 %s", url)
+        logging.warn("[ERROR] %s cannot decode by gbk or utf8", url)
 
     return newcontent
 
