@@ -13,7 +13,7 @@ from threading import Thread
 import socket
 
 from Queue import Queue
-from threading import Thread
+from threading import Thread, Lock
 from util.db import MySQL as DB
 
 from pyquery import PyQuery as pq
@@ -28,10 +28,10 @@ skip = 0
 class UrlHandler:
   def __init__(self, conn):
     self.conn = conn
-
     self._fetchrows()
 
   def indexed(self, url):
+    self.conn.ping(True)
     u = self.conn.fetchone \
         ("select * from url where `url` = %s", url)
 
@@ -79,6 +79,7 @@ class UrlHandler:
     global skip
     rows = self.conn.fetchall("select url from taobao limit %d offset %d" % (limit, skip))
     rows = set(rows)
+    if not len(rows): return
     skip += limit
     for row in rows:
       if row[0]: queue.put(row[0])
@@ -134,7 +135,7 @@ class Worker(Thread):
     self.url_fetcher = url_fetcher
 
   def run(self):
-    while not self.url_handler.empty():
+    while True:
       url = self.url_handler.get_url()
       print '[GET] url: ', url
 
@@ -144,6 +145,7 @@ class Worker(Thread):
         # TODO: save it
         self.url_handler.insert_url(url, content)
         print '[INSERT] url: ', url
+      queue.task_done()
 
 
 class TaskManager():
@@ -153,11 +155,14 @@ class TaskManager():
 
   def start(self):
     for num in range(self.thread_num):
-      Worker(UrlHandler(DB(self.dbconfig)), UrlFetcher()).start()
+      worker = Worker(UrlHandler(DB(self.dbconfig)), UrlFetcher())
+      worker.setDaemon(True)
+      worker.start()
 
 if __name__ == '__main__' or True:
   from config.settings import *
   # print DB_CONFIG
-  tm = TaskManager(DB_CONFIG, thread_num=5)
+  tm = TaskManager(DB_CONFIG)
   tm.start()
+  queue.join()
   print 'skip:', skip

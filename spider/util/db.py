@@ -16,6 +16,9 @@ class MySQL(DB):
     self.conn = MySQLdb.connect(**self.config)
     self.conn.ping(True)
 
+  def ping(self, *args, **kvargs):
+    self.conn.ping(*args, **kvargs)
+
   def execute(self, *args, **kvargs):
     try:
       cursor = self.conn.cursor()
@@ -27,7 +30,7 @@ class MySQL(DB):
     return cursor
 
   def fetchone(self, sql, *args, **kvargs):
-    print "[SQL]: ", sql
+    print "[SQL]: ", sql, args
     cursor = self.conn.cursor()
     cursor.execute(sql, *args, **kvargs)
     return cursor.fetchone()
