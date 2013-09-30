@@ -111,7 +111,7 @@ class UrlFetcher():
 
     content = None
     try:
-      logging.info('[REQ] url: %s', url)
+      logging.info('[REQ] %s url: %s', ctime(), url)
       response = urllib2.urlopen(request)
       content = response.read()
       if response.info().getheader('Content-Encoding') \

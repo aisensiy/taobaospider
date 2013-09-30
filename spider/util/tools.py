@@ -12,5 +12,5 @@ def str_gzip(content):
   gzip_file = gzip.GzipFile(fileobj=stringio, mode='w')
   gzip_file.write(content)
   gzip_file.close()
-  return gzip_file.getvalue()
+  return stringio.getvalue()
 
