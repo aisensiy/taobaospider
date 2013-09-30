@@ -76,14 +76,16 @@ class UrlHandler:
     try:
       dom = pq(content)
       title = dom('title') and dom('title')[0].text or None
-      if title: title = title_sanitize(title)
+      if title: title = str_sanitize(title)
     except Exception, e:
       logging.warn(e)
       logging.warn("Parse html error in %s", url)
       title = None
 
+    gz_content = str_gzip(str_sanitize(content))
+
     self.conn.execute \
-        ("insert into url(url, content, title) values(%s, %s, %s)", (url, content, title))
+        ("insert into url(url, content, title) values(%s, %s, %s)", (url, gz_content, title))
     self.conn.commit()
 
   # private
