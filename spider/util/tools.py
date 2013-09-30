@@ -1,6 +1,7 @@
 import re
 import gzip
 from StringIO import StringIO
+import hashlib
 
 def str_sanitize(title):
   title = title.strip()
@@ -17,3 +18,7 @@ def str_gzip(content):
   gzip_file.close()
   return stringio.getvalue()
 
+def md5(source):
+  m = hashlib.md5()
+  m.update(source)
+  return m.hexdigest()

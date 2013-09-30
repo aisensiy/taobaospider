@@ -41,7 +41,7 @@ class UrlHandler:
 
   def indexed(self, url):
     u = self.conn.fetchone \
-          ("select * from url where `url` = %s", url)
+          ("select url_md5 from url where `url_md5` = %s", md5(url))
 
     if u != None: return True
     else: return False
@@ -56,7 +56,7 @@ class UrlHandler:
     with lock:
       counter += 1
 
-    logging.info('url count %d', counter)
+    logging.info('[%s] url count %d', ctime(), counter)
 
     with lock:
       if queue.qsize() < 50: self._fetchrows()
@@ -85,7 +85,7 @@ class UrlHandler:
     gz_content = str_gzip(str_sanitize(content))
 
     self.conn.execute \
-        ("insert into url(url, content, title) values(%s, %s, %s)", (url, gz_content, title))
+        ("insert into url(url, content, title, url_md5) values(%s, %s, %s, %s)", (url, gz_content, title, md5(url)))
     self.conn.commit()
 
   # private
@@ -111,7 +111,7 @@ class UrlFetcher():
 
     content = None
     try:
-      logging.info('[REQ] %s url: %s', ctime(), url)
+      # logging.info('[REQ] %s url: %s', ctime(), url)
       response = urllib2.urlopen(request)
       content = response.read()
       if response.info().getheader('Content-Encoding') \
@@ -157,7 +157,7 @@ class Worker(Thread):
         if not content: continue
         # TODO: save it
         self.url_handler.insert_url(url, content)
-        logging.info('[INSERT] %s', url)
+        logging.info('[INSERT] %s %s', ctime(), url)
       queue.task_done()
 
 

@@ -32,7 +32,7 @@ class MySQL(DB):
     return cursor
 
   def fetchone(self, sql, *args, **kvargs):
-    logging.info("[SQL]: fetchone %s %s", args, kvargs)
+    # logging.info("[SQL]: fetchone %s %s", args, kvargs)
     cursor = self.execute(sql, *args, **kvargs)
     return cursor.fetchone()
 

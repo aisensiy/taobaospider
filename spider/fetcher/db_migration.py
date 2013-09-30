@@ -20,11 +20,12 @@ def create_tables(conn):
     id int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY,
     url text NOT NULL,
     content MEDIUMBLOB,
+    url_md5 char(32),
     title text
   ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci
   """
   create_url_index_sql = """
-  create index urlidx on url(url(255))
+  create index urlmd5idx on url(url_md5)
   """
   conn.execute(create_url_sql)
   conn.execute(create_url_index_sql)
