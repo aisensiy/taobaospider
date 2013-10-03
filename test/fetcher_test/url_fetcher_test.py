@@ -2,6 +2,7 @@
 
 import sys
 from nose.tools import *
+import nose
 
 from spider.fetcher.url_fetcher import UrlFetcher
 
@@ -30,4 +31,6 @@ class TestUrlFetcher:
     url = 'http://i.taobao.com/my_taobao.htm?spm=1.6659421.754894437.1.74Alch&jlogid=p282311494418d'
     assert self.fetcher.fetch(url) == '302'
 
-
+if __name__ == '__main__':
+  result = nose.run()
+  print result
