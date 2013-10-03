@@ -94,7 +94,7 @@ class UrlHandler:
     Fetch many rows with one column
     """
     global skip
-    rows = self.conn.fetchall("select url from taobao limit %s offset %s", (limit, skip))
+    rows = self.conn.fetchall("select url from taobao where id <= %s and id > %s", (limit + skip, skip))
     rows = set(rows)
     if not len(rows): return
     skip += limit
