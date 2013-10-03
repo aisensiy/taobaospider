@@ -43,7 +43,9 @@ class UrlHandler:
     u = self.conn.fetchone \
           ("select url_md5 from url where `url_md5` = %s", md5(url))
 
-    if u != None: return True
+    if u != None:
+      logging.info('[%s] already in db', md5(url))
+      return True
     else: return False
 
   def empty(self):
