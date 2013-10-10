@@ -26,7 +26,7 @@ from time import ctime
 import logging
 
 logging.basicConfig(level=logging.INFO)
-urllib2.socket.setdefaulttimeout(20)
+urllib2.socket.setdefaulttimeout(9)
 
 # global
 queue = Queue()
