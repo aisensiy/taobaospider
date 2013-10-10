@@ -25,6 +25,9 @@ from time import ctime
 
 import logging
 
+reload(sys)
+sys.setdefaultencoding("utf-8")
+
 logging.basicConfig(level=logging.INFO)
 urllib2.socket.setdefaulttimeout(9)
 
@@ -35,9 +38,10 @@ counter = 0
 lock = Lock()
 
 class UrlHandler:
-  def __init__(self, conn):
+  def __init__(self, conn, tablename):
     self.conn = conn
     self._fetchrows()
+    self.tablename = tablename
 
   def indexed(self, url):
     u = self.conn.fetchone \
@@ -96,7 +100,7 @@ class UrlHandler:
     Fetch many rows with one column
     """
     global skip
-    rows = self.conn.fetchall("select url from taobao where id <= %s and id > %s", (limit + skip, skip))
+    rows = self.conn.fetchall("select url from " + self.tablename +  " where id <= %s and id > %s", (limit + skip, skip))
     rows = set(rows)
     if not len(rows): return
     skip += limit
@@ -164,20 +168,21 @@ class Worker(Thread):
 
 
 class TaskManager():
-  def __init__(self, dbconfig, thread_num=10):
+  def __init__(self, dbconfig, tablename, thread_num=10):
     self.dbconfig = dbconfig
     self.thread_num = thread_num
+    self.tablename
 
   def start(self):
     for num in range(self.thread_num):
-      worker = Worker(UrlHandler(DB(self.dbconfig)), UrlFetcher())
+      worker = Worker(UrlHandler(DB(self.dbconfig), tablename=self.tablename), UrlFetcher())
       worker.setDaemon(True)
       worker.start()
 
 if __name__ == '__main__' or True:
   logging.info('start at %s', ctime())
   from config.settings import *
-  tm = TaskManager(DB_CONFIG)
+  tm = TaskManager(DB_CONFIG, sys.argv[1])
   tm.start()
   queue.join()
   logging.info('finish at %s', ctime())
