@@ -40,8 +40,8 @@ lock = Lock()
 class UrlHandler:
   def __init__(self, conn, tablename):
     self.conn = conn
-    self._fetchrows()
     self.tablename = tablename
+    self._fetchrows()
 
   def indexed(self, url):
     u = self.conn.fetchone \
@@ -171,11 +171,11 @@ class TaskManager():
   def __init__(self, dbconfig, tablename, thread_num=10):
     self.dbconfig = dbconfig
     self.thread_num = thread_num
-    self.tablename
+    self.tablename = tablename
 
   def start(self):
     for num in range(self.thread_num):
-      worker = Worker(UrlHandler(DB(self.dbconfig), tablename=self.tablename), UrlFetcher())
+      worker = Worker(UrlHandler(DB(self.dbconfig), self.tablename), UrlFetcher())
       worker.setDaemon(True)
       worker.start()
 
