@@ -64,9 +64,9 @@ class Table(object):
     rawdata = line.split(',')
     for field, index, cast, typename in fields:
       try:
-        v = rawdata[index]
-        v = cast(v)
-        if cast == str and len(v) == 0: v = None
+        v = rawdata[index].strip()
+        if len(v) == 0 or v == 'NULL': v = None
+        else: v = cast(v)
       except Exception as ex:
         print "[ERROR]\t", ex, field, index
         v = None
@@ -81,7 +81,7 @@ class Table(object):
       "int": "int"
     }
 
-    sql_template = "create table IF NOT EXISTS %s ( id int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY, %s ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci"
+    sql_template = "create table IF NOT EXISTS %s ( id int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY, %s ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci"
 
     values = []
     for field, idx, cast, typename in self.getfields():

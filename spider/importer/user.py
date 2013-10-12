@@ -8,13 +8,14 @@ class User(Table):
   def getfields(self):
     fields = [
       ('uid', 0, str),
-      ('gender', 2, int),
-      ('city', 3, int),
+      ('gender', 2, int, 'tinyint'),
+      ('age', 3, int),
+      ('city', 4, int),
       ('income_pre', 5, int),
       ('income_fml', 6, int),
-      ('education', 7, int),
-      ('job', 8, int),
-      ('industry', 9, int),
+      ('education', 7, int, 'tinyint'),
+      ('job', 8, int, 'tinyint'),
+      ('industry', 9, int, 'tinyint'),
       ('birth', 10, str)
     ]
 
